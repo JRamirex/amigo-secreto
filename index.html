@@ -1,11 +1,11 @@
 <!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Amigo Secreto en familia</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="style.css"></head><body><div class="wrap">
 <header><div data-orn></div><p class="eyebrow">Navidad en familia · 2026</p><h1>Amigo <em>Secreto</em></h1><p>Pide lo que sueñas, regala con cariño</p></header>
-<div class="chips"><span class="chip">🎁 Hasta <b id="pres"></b></span><span class="chip">🕯️ Cierra jue 26 nov · 11:59 p.m.</span></div>
+<div class="chips"><span class="chip">🎁 Límite: <b id="pres"></b></span><span class="chip">🕯️ Cierra jue 26 nov · 11:59 p.m.</span></div>
 <div class="card"><h2 class="center">Faltan para cerrar la lista</h2><div class="cd" id="cd"></div></div>
 <div class="card"><h2><span class="n">1</span>¿Quién eres?</h2><div class="names" id="names"></div><p class="hint">El ✓ verde indica que esa persona ya tiene deseos.</p></div>
-<div class="card" id="panel" hidden><div class="ph"><span class="av" id="pav"></span><div><small>Paso 2</small><h2 id="ptitle"></h2></div></div><div id="list"></div>
-<form id="f"><label>Describe tu deseo</label><textarea id="desc" rows="2" placeholder="Ej: saco de lana delgada, talla M, color gris"></textarea>
-<label>Enlaces (opcional, uno por línea)</label><textarea id="urls" rows="2" placeholder="https://..."></textarea>
-<p class="err" id="err"></p><button class="btn full" id="save">Agregar deseo</button><button type="button" class="btn sec full" id="cancel" hidden>Cancelar edición</button></form></div>
+<div class="card" id="panel" hidden><div class="ph"><span class="av" id="pav"></span><div><small>Paso 2</small><h2 id="ptitle"></h2></div></div><div class="limit">Límite: <b>$200.000 COP</b></div><p class="hint">Agrega <b>3 opciones</b> de regalo: así tu amigo secreto tiene alternativas si alguna se agota. <span id="prog"></span></p><div id="list"></div>
+<form id="f"><label id="flab">Opción 1 · Describe tu deseo</label><textarea id="desc" rows="2" placeholder="Ej: saco de lana delgada, talla M, color gris"></textarea>
+<label>Enlaces (opcional, hasta 3)</label><input class="u" id="u1" type="url" placeholder="https://... enlace 1"><input class="u" id="u2" type="url" placeholder="https://... enlace 2"><input class="u" id="u3" type="url" placeholder="https://... enlace 3">
+<p class="err" id="err"></p><button class="btn full" id="save">Agregar opción</button><button type="button" class="btn sec full" id="cancel" hidden>Cancelar edición</button></form></div>
 <footer>Hecho con cariño para la familia 🌲 · <a href="ruleta.html" style="color:inherit">Sorteo</a></footer></div>
 <script src="deco.js"></script><script src="app.js"></script></body></html>
