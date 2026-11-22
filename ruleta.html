@@ -1,0 +1,13 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sorteo</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="style.css">
+</head><body><div class="wrap">
+<header><div data-orn></div><p class="eyebrow">Fase 2</p><h1>El <em>sorteo</em></h1><p id=st>Muy pronto…</p></header>
+<div class="card" style="text-align:center"><div class="wheel"><div class="pin"></div><div class="hub">🎁</div><canvas id="c" width="600" height="600"></canvas></div><button class="btn full" id="go" disabled>Girar la ruleta</button><p class="hint">El sorteo se abre después del cierre de deseos. Nadie se saca a sí mismo ni a alguien de su grupo familiar.</p></div></div>
+<script src="deco.js"></script>
+<script>
+// FASE 2 (estructura, desactivada). Para activar: en config.json poner fase2.activa=true y definir grupos.
+// El sorteo real se hace en el servidor (/api/admin/sorteo?token=...) respetando grupos; esta ruleta solo anima la revelación.
+fetch('/api/config').then(r=>r.json()).then(C=>{const n=C.participantes,x=document.getElementById('c').getContext('2d'),a=2*Math.PI/n.length,col=['#8fa98a','#c8694a','#f1e6d0','#5d7a5a'];
+n.forEach((p,i)=>{x.beginPath();x.moveTo(300,300);x.arc(300,300,290,i*a,(i+1)*a);x.fillStyle=col[i%4];x.fill();x.save();x.translate(300,300);x.rotate(i*a+a/2);x.fillStyle=i%4==2?'#3a3a34':'#fff';x.font='600 21px Inter, system-ui';x.textAlign='right';x.fillText(p,270,8);x.restore()});
+x.beginPath();x.arc(300,300,40,0,7);x.fillStyle='#fffaf1';x.fill();
+if(C.fase2Activa){document.getElementById('st').textContent='¡Llegó el momento!';const g=document.getElementById('go');g.disabled=false;let rot=0;
+g.onclick=()=>{rot+=360*6+Math.random()*360;document.getElementById('c').style.transform='rotate('+rot+'deg)'}}})</script></body></html>
