@@ -20,8 +20,9 @@ if(C.fase2.activa){const M=sorteo(n,C.fase2.grupos,C.fase2.semilla),st=document.
  g.onclick=()=>{const t=M[sel.value],i=n.indexOf(t);rot+=360*6+((270-(i*360/n.length+180/n.length)-rot)%360+360)%360;cv.style.transition='transform 4s cubic-bezier(.2,.8,.2,1)';cv.style.transform='rotate('+rot+'deg)';g.disabled=true;
   setTimeout(()=>{st.textContent=sel.value+', te tocó: '+t+' 🎁';verDeseos(t)},4100)}}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-async function verDeseos(t){const L=document.getElementById('lista');L.hidden=false;let w=[];
- try{w=(await kvGet(t)).map(x=>({deseo:x.descripcion,url:(x.urls||[]).join(' ')}))}catch(e){}
- L.innerHTML='<h2>Deseos de '+esc(t)+'</h2><div class="limit">Límite: <b>$200.000 COP</b></div>'+(w.length?w.map((r,i)=>'<div class="wish" style="text-align:left"><div class="on">Opción '+(i+1)+'</div><div class="t">'+esc(r.deseo||'')+'</div><div class="links">'+String(r.url||'').split(/\s+/).filter(Boolean).map(u=>'<a class="lk" href="'+esc(u)+'" target="_blank" rel="noopener"><span>'+esc(u.replace(/^https?:\/\/(www\.)?/,'').split('/')[0])+'</span></a>').join('')+'</div></div>').join(''):'<p class="empty">'+esc(t)+' aún no tiene deseos en la lista.</p>')}
+async function verDeseos(t){const L=document.getElementById('lista');L.hidden=false;let l=[];try{l=await kvGet(t)}catch(e){}
+ const r=l.find(x=>x.id==='lista'&&'lista' in x),d=l.filter(x=>(x.descripcion||'').trim());
+ const txt=r?(r.lista||''):d.map((x,i)=>(d.length>1?(i+1)+'. ':'')+x.descripcion.trim()).join('\n'),urls=l.flatMap(x=>x.urls||[]);
+ L.innerHTML='<h2>Deseos de '+esc(t)+'</h2><div class="limit">Límite: <b>$200.000 COP</b></div>'+(txt.trim()||urls.length?'<div class="wish" style="text-align:left"><div class="t" style="white-space:pre-line">'+esc(txt)+'</div><div class="links">'+urls.map(u=>'<a class="lk" href="'+esc(/^https?:/.test(u)?u:'https://'+u)+'" target="_blank" rel="noopener"><span>'+esc(u.replace(/^https?:\/\/(www\.)?/,'').split('/')[0])+'</span></a>').join('')+'</div></div>':'<p class="empty">'+esc(t)+' aún no tiene deseos en la lista.</p>')}
 if(location.hash.startsWith('#ver='))verDeseos(decodeURIComponent(location.hash.slice(5)));
 </script></body></html>

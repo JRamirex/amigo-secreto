@@ -13,24 +13,25 @@ const store={
 };
 function tick(){let s=Math.max(0,(Date.parse(C.fechaLimite)-Date.now())/1e3);const v=[s/86400,s%86400/3600,s%3600/60,s%60].map(Math.floor);
 $('#cd').innerHTML=s?v.map((n,i)=>`<div><b>${String(n).padStart(2,'0')}</b><span>${['días','horas','min','seg'][i]}</span></div>`).join(''):'<div style="grid-column:1/-1"><b>¡Lista cerrada!</b></div>';}
-async function names(){const counts=await Promise.all(C.participantes.map(n=>store.list(n).then(l=>l.length)));
+async function names(){const counts=await Promise.all(C.participantes.map(n=>store.list(n).then(l=>toLista(l).lista.trim()?1:0)));
 $('#names').innerHTML=C.participantes.map((n,i)=>`<button class="${counts[i]?'has':''} ${n===yo?'sel':''}" data-n="${esc(n)}"><span class="av" style="background:${avatarColor(n)}">${initials(n)}</span>${esc(n)}</button>`).join('');}
 async function pick(n){yo=n;localStorage.setItem('yo',n);$('#panel').hidden=false;$('#ptitle').textContent=`Los deseos de ${n}`;const pv=$('#pav');pv.textContent=initials(n);pv.style.background=avatarColor(n);await list();names();$('#panel').scrollIntoView({behavior:'smooth'});}
 $('#names').onclick=e=>{const b=e.target.closest('button');if(b)pick(b.dataset.n)};
-const slots=[];let chain=Promise.resolve();
-function card(i){const d=deseos[i]||{descripcion:'',urls:[]};const u=d.urls.length?d.urls:[''];
-return `<div class="gift${d.descripcion.trim()?' ok':''}" data-i="${i}"><div class="gh"><span class="gl">Regalo ${i+1}</span><span class="ck" aria-label="listo">✓</span></div>
-<textarea class="gd" rows="2" placeholder="${['Ej: saco de lana delgada, talla M, gris','Otra idea que te haría feliz','Una alternativa más, por si acaso'][i]}">${esc(d.descripcion)}</textarea>
-<div class="gu">${u.map(x=>`<input class="gk" type="url" inputmode="url" placeholder="🔗 Enlace (opcional)" value="${esc(x)}">`).join('')}</div>
-<button type="button" class="add"${u.length>=3?' hidden':''}>+ añadir otro enlace</button></div>`}
-async function list(){deseos=(await store.list(yo)).slice(0,3);for(let i=0;i<3;i++)slots[i]=deseos[i]?.id||null;$('#list').innerHTML=[0,1,2].map(card).join('');prog();}
-function prog(){const n=[...document.querySelectorAll('.gift.ok')].length;$('#prog').textContent=`Llevas ${n} de 3.`}
+// Forma v4: un solo registro {id:'lista',lista,urls}. Datos viejos (varias tarjetas) se convierten al vuelo.
+function toLista(l){const r=l.find(x=>x.id==='lista'&&'lista' in x);if(r)return{lista:r.lista||'',urls:r.urls||[]};
+ const d=l.filter(x=>(x.descripcion||'').trim());return{lista:d.map((x,i)=>(d.length>1?(i+1)+'. ':'')+x.descripcion.trim()).join('\n'),urls:l.flatMap(x=>x.urls||[])}}
+const MAXL=6;let chain=Promise.resolve(),last='';
+const linkIn=(v='')=>`<div class="lrow"><span class="lic">🔗</span><input class="gk" type="url" inputmode="url" placeholder="https://… (opcional)" value="${esc(v)}"></div>`;
+async function list(){const w=toLista(await store.list(yo));const u=w.urls.slice(0,MAXL);while(u.length<3)u.push('');last=JSON.stringify({lista:w.lista.trim(),urls:w.urls.filter(Boolean)});
+$('#list').innerHTML=`<div class="wl${w.lista.trim()?' ok':''}"><label class="wlab" for="wtxt">✍️ Mi lista de deseos <span class="ck">✓</span></label>
+<textarea id="wtxt" rows="7" placeholder="1. Saco de lana gris talla M&#10;2. Libro “El infinito en un junco”&#10;3. Audífonos inalámbricos">${esc(w.lista)}</textarea>
+<p class="hint">Escribe unas <b>3 opciones</b> dentro del límite, una por línea, con detalles (talla, color, marca).</p></div>
+<div class="wlinks"><div class="wlab">🛍️ Enlaces de referencia</div><div class="gu">${u.map(linkIn).join('')}</div><button type="button" class="add"${u.length>=MAXL?' hidden':''}>+ añadir otro enlace</button></div>`;}
 const tm={};function flag(t){const s=$('#saved');s.textContent=t;s.className='saved on'+(t.startsWith('No')?' bad':'');clearTimeout(tm.f);if(t==='Guardado ✓')tm.f=setTimeout(()=>s.className='saved',1800)}
-function persist(g){const i=+g.dataset.i,who=yo;const b={descripcion:g.querySelector('.gd').value.trim(),urls:[...g.querySelectorAll('.gk')].map(x=>x.value.trim().replace(/\s+/g,'')).filter(Boolean).slice(0,3)};
-g.classList.toggle('ok',!!b.descripcion);prog();
-const key=JSON.stringify(b);if(g.dataset.last===key)return;g.dataset.last=key;flag('Guardando…');
-chain=chain.then(async()=>{try{if(!b.descripcion&&!b.urls.length){if(slots[i])await store.del(who,slots[i]);slots[i]=null}else{if(!slots[i])slots[i]=Date.now().toString(36)+i;await store.put(who,slots[i],b)}flag('Guardado ✓');names()}catch{flag('No se pudo guardar, reintenta')}})}
-$('#list').addEventListener('input',e=>{const g=e.target.closest('.gift');if(!g)return;clearTimeout(tm[g.dataset.i]);tm[g.dataset.i]=setTimeout(()=>persist(g),900)});
-$('#list').addEventListener('focusout',e=>{const g=e.target.closest('.gift');if(g){clearTimeout(tm[g.dataset.i]);persist(g)}});
-$('#list').addEventListener('click',e=>{if(!e.target.matches('.add'))return;const g=e.target.closest('.gift'),w=g.querySelector('.gu');const n=w.querySelectorAll('.gk').length;if(n<3){w.insertAdjacentHTML('beforeend','<input class="gk" type="url" inputmode="url" placeholder="🔗 Otro enlace (opcional)">');w.lastChild.focus()}if(n+1>=3)e.target.hidden=true});
+function persist(){const who=yo,b={lista:$('#wtxt').value.trim(),urls:[...document.querySelectorAll('.gk')].map(x=>x.value.trim().replace(/\s+/g,'')).filter(Boolean).slice(0,MAXL)};
+$('.wl').classList.toggle('ok',!!b.lista);const key=JSON.stringify(b);if(key===last)return;last=key;flag('Guardando…');
+chain=chain.then(async()=>{try{const l=(b.lista||b.urls.length)?[{id:'lista',...b,fecha:new Date().toISOString()}]:[];lsSet(who,l);await kvSet(who,l);flag('Guardado ✓');names()}catch{flag('No se pudo guardar, reintenta')}})}
+$('#list').addEventListener('input',()=>{clearTimeout(tm.s);tm.s=setTimeout(persist,900)});
+$('#list').addEventListener('focusout',()=>{clearTimeout(tm.s);persist()});
+$('#list').addEventListener('click',e=>{if(!e.target.matches('.add'))return;const w=$('.gu');w.insertAdjacentHTML('beforeend',linkIn());w.lastElementChild.querySelector('input').focus();if(w.children.length>=MAXL)e.target.hidden=true});
 (async()=>{C=CONFIG;$('#pres').textContent='$'+Number(C.presupuesto).toLocaleString('es-CO')+' COP';tick();setInterval(tick,1000);await names();const s=localStorage.getItem('yo');if(s&&C.participantes.includes(s))pick(s);})();
