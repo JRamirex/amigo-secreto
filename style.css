@@ -90,3 +90,5 @@ input.u{margin-bottom:8px}
 .wlinks .gu{display:flex;flex-direction:column;gap:8px}
 .lrow{position:relative}.lrow .lic{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:.85rem;opacity:.7}
 .lrow .gk{padding-left:34px!important;width:100%;box-sizing:border-box}
+.cnt{margin:4px 2px 0;text-align:right;font-size:12px;opacity:.6}
+.lerr{margin:2px 0 8px 34px;font-size:12.5px;color:#b3412a}

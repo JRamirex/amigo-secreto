@@ -3,26 +3,38 @@
 <header><div data-orn></div><p class="eyebrow">Fase 2</p><h1>El <em>sorteo</em></h1><p id=st>Muy pronto…</p></header>
 <div class="card" style="text-align:center"><div class="wheel"><div class="pin"></div><div class="hub">🎁</div><canvas id="c" width="600" height="600"></canvas></div><button class="btn full" id="go" disabled>Girar la ruleta</button><div id="lista" hidden></div><p class="hint">El sorteo se abre después del cierre de deseos. Nadie se saca a sí mismo ni a alguien de su grupo familiar.</p></div></div>
 <script src="deco.js"></script><script src="store.js"></script>
+<script src="sorteo.js"></script>
 <script>
-// FASE 2 estática: config embebida (de config.json). Activar con fase2.activa=true. Sorteo determinista por semilla:
-// nadie se saca a sí mismo ni a alguien de su grupo familiar.
-const C={"participantes": ["Hilda", "Elio", "Jenny", "Claudia", "Leonor", "Nancy", "William", "Juanda", "Diana", "Santi", "Moni", "Willi", "Naty", "Juan Pa", "Leonardo", "Pilar", "Liliana", "Juancho", "Juanse", "María", "July", "Andrew"], "fase2": {"activa": false, "semilla": "navidad-2026", "grupos": [["Hilda", "Elio", "Jenny", "Claudia", "Leonor"], ["Nancy", "William", "Juanda", "Diana", "Santi", "July", "Andrew"], ["Moni", "Willi", "Naty", "Juan Pa"], ["Leonardo", "Pilar"], ["Liliana", "Juancho", "Juanse", "María"]]}};
-function rng(s){let h=1779033703^s.length;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=h<<13|h>>>19}return()=>{h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);return((h^=h>>>16)>>>0)/4294967296}}
-function sorteo(P,G,seed){const g={};G.forEach((l,i)=>l.forEach(p=>g[p]=i));const R=rng(seed);
- for(let t=0;t<5000;t++){const r=P.slice();for(let i=r.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[r[i],r[j]]=[r[j],r[i]]}
-  if(P.every((p,i)=>r[i]!==p&&(g[p]===undefined||g[p]!==g[r[i]])))return Object.fromEntries(P.map((p,i)=>[p,r[i]]))}return null}
-const n=C.participantes,cv=document.getElementById('c'),x=cv.getContext('2d'),a=2*Math.PI/n.length,col=['#8fa98a','#c8694a','#f1e6d0','#5d7a5a'];
+// FASE 2: el sorteo se generó offline (tools/sorteo.mjs). Aquí solo hay un blob cifrado por persona;
+// cada uno se abre únicamente con el nombre de su dueño. Un candado en la nube permite un solo giro por nombre.
+const n=["Hilda", "Elio", "Jenny", "Claudia", "Leonor", "Nancy", "William", "Juanda", "Diana", "Santi", "Moni", "Willi", "Naty", "Juan Pa", "Leonardo", "Pilar", "Liliana", "Juancho", "Juanse", "María", "July", "Andrew"];
+const te=new TextEncoder(),N=s=>s.normalize('NFC'),ub=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function abrir(p){const h=[...new Uint8Array(await crypto.subtle.digest('SHA-256',te.encode(SORTEO.salt+'|'+N(p))))].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,24),bl=SORTEO.blobs[h];if(!bl)throw Error('sin blob');
+ const k=await crypto.subtle.deriveKey({name:'PBKDF2',salt:te.encode(SORTEO.salt),iterations:SORTEO.iter,hash:'SHA-256'},await crypto.subtle.importKey('raw',te.encode(N(p)),'PBKDF2',false,['deriveKey']),{name:'AES-GCM',length:256},false,['decrypt']);
+ const u=ub(bl);return new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:u.slice(0,12)},k,u.slice(12)))}
+const dev=localStorage.getItem('dev')||(()=>{const d=crypto.randomUUID();localStorage.setItem('dev',d);return d})();
+const cv=document.getElementById('c'),x=cv.getContext('2d'),a=2*Math.PI/n.length,col=['#8fa98a','#c8694a','#f1e6d0','#5d7a5a'];
 n.forEach((p,i)=>{x.beginPath();x.moveTo(300,300);x.arc(300,300,290,i*a,(i+1)*a);x.fillStyle=col[i%4];x.fill();x.save();x.translate(300,300);x.rotate(i*a+a/2);x.fillStyle=i%4==2?'#3a3a34':'#fff';x.font='600 21px Inter, system-ui';x.textAlign='right';x.fillText(p,270,8);x.restore()});
 x.beginPath();x.arc(300,300,40,0,7);x.fillStyle='#fffaf1';x.fill();
-if(C.fase2.activa){const M=sorteo(n,C.fase2.grupos,C.fase2.semilla),st=document.getElementById('st'),g=document.getElementById('go');
+if(SORTEO.activa){const st=document.getElementById('st'),g=document.getElementById('go'),L=document.getElementById('lista');
  const sel=document.createElement('select');sel.className='btn sec full';sel.innerHTML='<option value="">¿Quién eres?</option>'+n.map(p=>'<option>'+p+'</option>').join('');g.before(sel);
- st.textContent='¡Llegó el momento!';sel.onchange=()=>g.disabled=!sel.value;let rot=0;
- g.onclick=()=>{const t=M[sel.value],i=n.indexOf(t);rot+=360*6+((270-(i*360/n.length+180/n.length)-rot)%360+360)%360;cv.style.transition='transform 4s cubic-bezier(.2,.8,.2,1)';cv.style.transform='rotate('+rot+'deg)';g.disabled=true;
-  setTimeout(()=>{st.textContent=sel.value+', te tocó: '+t+' 🎁';verDeseos(t)},4100)}}
+ st.textContent='¡Llegó el momento!';let rot=0,busy=false;
+ const girar=t=>{const i=n.indexOf(t);rot+=360*6+((270-(i*360/n.length+180/n.length)-rot)%360+360)%360;cv.style.transition='transform 4s cubic-bezier(.2,.8,.2,1)';cv.style.transform='rotate('+rot+'deg)'};
+ sel.onchange=async()=>{const p=sel.value;g.disabled=true;L.hidden=true;if(!p){st.textContent='¡Llegó el momento!';return}
+  const mio=localStorage.getItem('giro:'+p);if(mio){st.textContent='Ya giraste, '+p+'. Te tocó: '+mio+' 🎁';verDeseos(mio);return}
+  st.textContent='Revisando…';let lk;try{lk=await lockGet(p)}catch(e){st.textContent='Sin conexión, intenta de nuevo';return}
+  if(sel.value!==p)return;if(lk){st.textContent='Este nombre ya giró 🔒';return}
+  st.textContent='¡Llegó el momento!';g.disabled=false};
+ g.onclick=async()=>{const p=sel.value;if(!p||busy)return;busy=true;g.disabled=true;sel.disabled=true;
+  try{if(await lockGet(p)){st.textContent='Este nombre ya giró 🔒';return}
+   await lockSet(p,{d:dev,t:new Date().toISOString()});const ck=await lockGet(p);if(!ck||ck.d!==dev){st.textContent='Este nombre ya giró 🔒';return}
+   const t=await abrir(p);localStorage.setItem('giro:'+p,t);girar(t);
+   setTimeout(()=>{st.textContent=p+', te tocó: '+t+' 🎁';verDeseos(t)},4100)}
+  catch(e){st.textContent='No se pudo girar, intenta de nuevo'}finally{busy=false;sel.disabled=false}}}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 async function verDeseos(t){const L=document.getElementById('lista');L.hidden=false;let l=[];try{l=await kvGet(t)}catch(e){}
  const r=l.find(x=>x.id==='lista'&&'lista' in x),d=l.filter(x=>(x.descripcion||'').trim());
  const txt=r?(r.lista||''):d.map((x,i)=>(d.length>1?(i+1)+'. ':'')+x.descripcion.trim()).join('\n'),urls=l.flatMap(x=>x.urls||[]);
- L.innerHTML='<h2>Deseos de '+esc(t)+'</h2><div class="limit">Límite: <b>$200.000 COP</b></div>'+(txt.trim()||urls.length?'<div class="wish" style="text-align:left"><div class="t" style="white-space:pre-line">'+esc(txt)+'</div><div class="links">'+urls.map(u=>'<a class="lk" href="'+esc(/^https?:/.test(u)?u:'https://'+u)+'" target="_blank" rel="noopener"><span>'+esc(u.replace(/^https?:\/\/(www\.)?/,'').split('/')[0])+'</span></a>').join('')+'</div></div>':'<p class="empty">'+esc(t)+' aún no tiene deseos en la lista.</p>')}
+ L.innerHTML='<h2>Deseos de '+esc(t)+'</h2><div class="limit">Límite: <b>$200.000 COP</b></div>'+(txt.trim()||urls.length?'<div class="wish" style="text-align:left"><div class="t" style="white-space:pre-line">'+esc(txt)+'</div><div class="links">'+urls.map(u=>/^www\./i.test(u)?'https://'+u:u).filter(u=>/^https?:\/\/[^\s\/]+\.[^\s]+$/i.test(u)).map(u=>'<a class="lk" href="'+esc(u)+'" target="_blank" rel="noopener"><span>'+esc(u.replace(/^https?:\/\/(www\.)?/,'').split('/')[0])+'</span></a>').join('')+'</div></div>':'<p class="empty">'+esc(t)+' aún no tiene deseos en la lista.</p>')}
 if(location.hash.startsWith('#ver='))verDeseos(decodeURIComponent(location.hash.slice(5)));
 </script></body></html>

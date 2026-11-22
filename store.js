@@ -6,3 +6,6 @@ async function kvGet(n){const r=await fetch(kvKey(n)+'?t='+Date.now(),{cache:'no
 async function kvSet(n,l){const r=await fetch(kvKey(n),{method:'POST',body:new Blob([JSON.stringify(l)],{type:'text/plain'})});if(!r.ok)throw Error('kv '+r.status)}
 // Todas las filas en formato plano (admin / CSV / ruleta).
 async function kvAll(P){const ls=await Promise.all(P.map(n=>kvGet(n).catch(()=>[])));return P.flatMap((n,i)=>ls[i].map(w=>({persona:n,deseo:('lista' in w?w.lista:w.descripcion)||'',url:(w.urls||[]).join(' '),timestamp:w.fecha||w.id})).filter(w=>w.deseo.trim()||w.url))}
+// Candado de giro (fase 2): una clave 'giro-<nombre>' por persona. Vacía = no ha girado.
+async function lockGet(n){const r=await fetch(kvKey('giro-'+n)+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('kv '+r.status);const t=(await r.text()).trim();return t?JSON.parse(t):null}
+async function lockSet(n,v){const r=await fetch(kvKey('giro-'+n),{method:'POST',body:new Blob([JSON.stringify(v)],{type:'text/plain'})});if(!r.ok)throw Error('kv '+r.status)}
