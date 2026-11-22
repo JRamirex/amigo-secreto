@@ -4,10 +4,19 @@
 <div class="card" style="text-align:center"><div class="wheel"><div class="pin"></div><div class="hub">🎁</div><canvas id="c" width="600" height="600"></canvas></div><button class="btn full" id="go" disabled>Girar la ruleta</button><p class="hint">El sorteo se abre después del cierre de deseos. Nadie se saca a sí mismo ni a alguien de su grupo familiar.</p></div></div>
 <script src="deco.js"></script>
 <script>
-// FASE 2 (estructura, desactivada). Para activar: en config.json poner fase2.activa=true y definir grupos.
-// El sorteo real se hace en el servidor (/api/admin/sorteo?token=...) respetando grupos; esta ruleta solo anima la revelación.
-fetch('/api/config').then(r=>r.json()).then(C=>{const n=C.participantes,x=document.getElementById('c').getContext('2d'),a=2*Math.PI/n.length,col=['#8fa98a','#c8694a','#f1e6d0','#5d7a5a'];
+// FASE 2 estática: config embebida (de config.json). Activar con fase2.activa=true. Sorteo determinista por semilla:
+// nadie se saca a sí mismo ni a alguien de su grupo familiar.
+const C={"participantes": ["Hilda", "Elio", "Jenny", "Claudia", "Leonor", "Nancy", "William", "Juanda", "Diana", "Santi", "Moni", "Willi", "Naty", "Juan Pa", "Leonardo", "Pilar", "Liliana", "Juancho", "Juanse", "María", "July", "Andrew"], "fase2": {"activa": false, "semilla": "navidad-2026", "grupos": [["Hilda", "Elio", "Jenny", "Claudia", "Leonor"], ["Nancy", "William", "Juanda", "Diana", "Santi", "July", "Andrew"], ["Moni", "Willi", "Naty", "Juan Pa"], ["Leonardo", "Pilar"], ["Liliana", "Juancho", "Juanse", "María"]]}};
+function rng(s){let h=1779033703^s.length;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=h<<13|h>>>19}return()=>{h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);return((h^=h>>>16)>>>0)/4294967296}}
+function sorteo(P,G,seed){const g={};G.forEach((l,i)=>l.forEach(p=>g[p]=i));const R=rng(seed);
+ for(let t=0;t<5000;t++){const r=P.slice();for(let i=r.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[r[i],r[j]]=[r[j],r[i]]}
+  if(P.every((p,i)=>r[i]!==p&&(g[p]===undefined||g[p]!==g[r[i]])))return Object.fromEntries(P.map((p,i)=>[p,r[i]]))}return null}
+const n=C.participantes,cv=document.getElementById('c'),x=cv.getContext('2d'),a=2*Math.PI/n.length,col=['#8fa98a','#c8694a','#f1e6d0','#5d7a5a'];
 n.forEach((p,i)=>{x.beginPath();x.moveTo(300,300);x.arc(300,300,290,i*a,(i+1)*a);x.fillStyle=col[i%4];x.fill();x.save();x.translate(300,300);x.rotate(i*a+a/2);x.fillStyle=i%4==2?'#3a3a34':'#fff';x.font='600 21px Inter, system-ui';x.textAlign='right';x.fillText(p,270,8);x.restore()});
 x.beginPath();x.arc(300,300,40,0,7);x.fillStyle='#fffaf1';x.fill();
-if(C.fase2Activa){document.getElementById('st').textContent='¡Llegó el momento!';const g=document.getElementById('go');g.disabled=false;let rot=0;
-g.onclick=()=>{rot+=360*6+Math.random()*360;document.getElementById('c').style.transform='rotate('+rot+'deg)'}}})</script></body></html>
+if(C.fase2.activa){const M=sorteo(n,C.fase2.grupos,C.fase2.semilla),st=document.getElementById('st'),g=document.getElementById('go');
+ const sel=document.createElement('select');sel.className='btn sec full';sel.innerHTML='<option value="">¿Quién eres?</option>'+n.map(p=>'<option>'+p+'</option>').join('');g.before(sel);
+ st.textContent='¡Llegó el momento!';sel.onchange=()=>g.disabled=!sel.value;let rot=0;
+ g.onclick=()=>{const t=M[sel.value],i=n.indexOf(t);rot+=360*6+((270-(i*360/n.length+180/n.length)-rot)%360+360)%360;cv.style.transition='transform 4s cubic-bezier(.2,.8,.2,1)';cv.style.transform='rotate('+rot+'deg)';g.disabled=true;
+  setTimeout(()=>{st.textContent=sel.value+', te tocó: '+t+' 🎁'},4100)}}
+</script></body></html>
