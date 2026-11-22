@@ -2,7 +2,7 @@
 </head><body><div class="wrap">
 <header><div data-orn></div><p class="eyebrow">Fase 2</p><h1>El <em>sorteo</em></h1><p id=st>Muy pronto…</p></header>
 <div class="card" style="text-align:center"><div class="wheel"><div class="pin"></div><div class="hub">🎁</div><canvas id="c" width="600" height="600"></canvas></div><button class="btn full" id="go" disabled>Girar la ruleta</button><div id="lista" hidden></div><p class="hint">El sorteo se abre después del cierre de deseos. Nadie se saca a sí mismo ni a alguien de su grupo familiar.</p></div></div>
-<script src="deco.js"></script>
+<script src="deco.js"></script><script src="store.js"></script>
 <script>
 // FASE 2 estática: config embebida (de config.json). Activar con fase2.activa=true. Sorteo determinista por semilla:
 // nadie se saca a sí mismo ni a alguien de su grupo familiar.
@@ -19,10 +19,9 @@ if(C.fase2.activa){const M=sorteo(n,C.fase2.grupos,C.fase2.semilla),st=document.
  st.textContent='¡Llegó el momento!';sel.onchange=()=>g.disabled=!sel.value;let rot=0;
  g.onclick=()=>{const t=M[sel.value],i=n.indexOf(t);rot+=360*6+((270-(i*360/n.length+180/n.length)-rot)%360+360)%360;cv.style.transition='transform 4s cubic-bezier(.2,.8,.2,1)';cv.style.transform='rotate('+rot+'deg)';g.disabled=true;
   setTimeout(()=>{st.textContent=sel.value+', te tocó: '+t+' 🎁';verDeseos(t)},4100)}}
-const SHEET_URL='https://script.google.com/macros/s/AKfycbwHOja_hFOcAJs7QagSRZAcVKCdVQAptQFM3ZRPn9Vvqi1uO5xyrM1gqcVySaTfZzTb/exec';
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 async function verDeseos(t){const L=document.getElementById('lista');L.hidden=false;let w=[];
- try{w=(await (await fetch(SHEET_URL+'?t='+Date.now())).json()).filter(r=>r.persona===t)}catch(e){}
+ try{w=(await kvGet(t)).map(x=>({deseo:x.descripcion,url:(x.urls||[]).join(' ')}))}catch(e){}
  L.innerHTML='<h2>Deseos de '+esc(t)+'</h2><div class="limit">Límite: <b>$200.000 COP</b></div>'+(w.length?w.map((r,i)=>'<div class="wish" style="text-align:left"><div class="on">Opción '+(i+1)+'</div><div class="t">'+esc(r.deseo||'')+'</div><div class="links">'+String(r.url||'').split(/\s+/).filter(Boolean).map(u=>'<a class="lk" href="'+esc(u)+'" target="_blank" rel="noopener"><span>'+esc(u.replace(/^https?:\/\/(www\.)?/,'').split('/')[0])+'</span></a>').join('')+'</div></div>').join(''):'<p class="empty">'+esc(t)+' aún no tiene deseos en la lista.</p>')}
 if(location.hash.startsWith('#ver='))verDeseos(decodeURIComponent(location.hash.slice(5)));
 </script></body></html>
