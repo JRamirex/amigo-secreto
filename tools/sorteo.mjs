@@ -32,7 +32,16 @@ const ok=(p,r)=>r!==p&&g[p]!==g[r];
 function bt(rest){if(!rest.length)return true;let best=null,bc=null;
  for(const p of rest){const c=pool.filter(r=>!usados.has(r)&&ok(p,r));if(!best||c.length<bc.length){best=p;bc=c}if(!c.length)return false}
  for(const r of shuf(bc)){M[best]=r;usados.add(r);if(bt(rest.filter(x=>x!==best)))return true;usados.delete(r);delete M[best]}return false}
-if(!bt(shuf(libres))){console.error('SIN SOLUCIÓN: con los que ya giraron no queda asignación válida para '+libres.join(', '));process.exit(2)}
+if(!bt(shuf(libres))){
+ // No se relajan reglas. Buscar UN giro ya hecho que, rehecho, permite completar el sorteo.
+ console.error('SIN SOLUCIÓN: con los que ya giraron no queda asignación válida para '+libres.join(', ')+'. No se generó sorteo.js.');
+ let prop=null;
+ for(const f of Object.keys(fijo).sort()){const r0=fijo[f];usados.delete(r0);delete M[f];pool.push(r0);
+  const rest=[f,...libres];if(bt(rest)){prop={f,r0,nuevo:rest.map(p=>`${p} -> ${M[p]}`)};break}
+  pool.pop();usados.add(r0);M[f]=r0}
+ if(prop)console.error(`PROPUESTA: ${prop.f} ya giró y le salió ${prop.r0}. Pídele a ${prop.f} que vuelva a girar (o arréglalo a mano) con esta asignación válida:\n  `+prop.nuevo.join('\n  ')+`\nLuego quita a ${prop.f} de --girados y vuelve a correr.`);
+ else console.error('PROPUESTA: ni rehaciendo un solo giro hay solución; hay que rehacer varios o todo el sorteo.');
+ process.exit(2)}
 const salt=b64(randomBytes(16)),blobs={};
 for(const p of P){const iv=randomBytes(12),ct=await wc.subtle.encrypt({name:'AES-GCM',iv},await keyS(salt,200000,p,'encrypt'),te.encode(M[p]));blobs[await hashS(salt,p)]=b64(Buffer.concat([iv,Buffer.from(ct)]))}
 const S={activa:a.includes('--activar'),desde:opt('--desde')||null,participantes:P,salt,iter:200000,blobs};
