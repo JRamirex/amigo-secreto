@@ -34,7 +34,12 @@ function checkLinks(){const out=[];document.querySelectorAll('.gk').forEach(x=>{
  if(raw&&!u){if(!e){r.insertAdjacentHTML('afterend','<p class="lerr" role="alert">Enlace no válido: usa uno que empiece por https://</p>')}}else{e&&e.remove();if(u){out.push(u);if(u!==raw&&document.activeElement!==x)x.value=u}}});return out}
 function persist(){const who=yo,b={lista:$('#wtxt').value.trim().slice(0,500),urls:checkLinks().slice(0,MAXL)};
 $('.wl').classList.toggle('ok',!!b.lista);const key=JSON.stringify(b);if(key===last)return;last=key;flag('Guardando…');
-chain=chain.then(async()=>{try{const l=(b.lista||b.urls.length)?[{id:'lista',...b,fecha:new Date().toISOString()}]:[];lsSet(who,l);await kvSet(who,l);flag('Guardado ✓');names()}catch{flag('No se pudo guardar, reintenta')}})}
+// Protección: nunca se escribe vacío sobre un deseo guardado sin confirmación explícita.
+chain=chain.then(async()=>{try{const vacio=!b.lista&&!b.urls.length;
+ if(vacio){let r;try{r=toLista(await kvGet(who))}catch{flag('No se pudo guardar, reintenta');last='';return}
+  if(r.lista.trim()||r.urls.length){if(!confirm('¿Seguro que quieres BORRAR toda la lista de deseos de '+who+'?')){if(who===yo)await list();flag('No se borró nada');return}}
+  else{flag('Guardado ✓');return}}
+ const l=vacio?[]:[{id:'lista',...b,fecha:new Date().toISOString()}];lsSet(who,l);await kvSet(who,l);flag('Guardado ✓');names()}catch{flag('No se pudo guardar, reintenta')}})}
 $('#list').addEventListener('input',()=>{const c=$('#cnt');if(c)c.textContent=$('#wtxt').value.length+'/500';clearTimeout(tm.s);tm.s=setTimeout(persist,900)});
 $('#list').addEventListener('focusout',()=>{clearTimeout(tm.s);persist()});
 $('#list').addEventListener('click',e=>{if(!e.target.matches('.add'))return;const w=$('.gu');w.insertAdjacentHTML('beforeend',linkIn());w.lastElementChild.querySelector('input').focus();if(w.children.length>=MAXL)e.target.hidden=true});
