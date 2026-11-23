@@ -1,6 +1,6 @@
 const $=s=>document.querySelector(s);let C,yo=null,deseos=[];const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 // Config embebida (GitHub Pages no tiene /api).
-const CONFIG={"presupuesto": 200000, "fechaLimite": "2026-11-26T23:59:00-05:00", "participantes": ["Hilda", "Elio", "Jenny", "Claudia", "Leonor", "Nancy", "William", "Juanda", "Diana", "Santi", "Moni", "Willi", "Naty", "Juan Pa", "Leonardo", "Pilar", "Liliana", "Juancho", "Juanse", "María", "July", "Andrew"]};
+const CONFIG={"presupuesto": 200000, "fechaLimite": "2026-11-30T23:59:00-05:00", "participantes": ["Hilda", "Elio", "Jenny", "Claudia", "Leonor", "Nancy", "William", "Juanda", "Diana", "Santi", "Moni", "Willi", "Naty", "Juan Pa", "Leonardo", "Pilar", "Liliana", "Juancho", "Juanse", "María", "July", "Andrew", "Daniela"]};
 const LS='deseos:';const lsGet=n=>{try{return JSON.parse(localStorage.getItem(LS+n))||[]}catch{return[]}};const lsSet=(n,l)=>localStorage.setItem(LS+n,JSON.stringify(l));
 // Store: nube (store.js) con respaldo en este navegador (localStorage).
 const store={

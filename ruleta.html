@@ -7,7 +7,8 @@
 <script>
 // FASE 2: el sorteo se generó offline (tools/sorteo.mjs). Aquí solo hay un blob cifrado por persona;
 // cada uno se abre únicamente con el nombre de su dueño. Un candado en la nube permite un solo giro por nombre.
-const n=["Hilda", "Elio", "Jenny", "Claudia", "Leonor", "Nancy", "William", "Juanda", "Diana", "Santi", "Moni", "Willi", "Naty", "Juan Pa", "Leonardo", "Pilar", "Liliana", "Juancho", "Juanse", "María", "July", "Andrew"];
+const n0=["Hilda", "Elio", "Jenny", "Claudia", "Leonor", "Nancy", "William", "Juanda", "Diana", "Santi", "Moni", "Willi", "Naty", "Juan Pa", "Leonardo", "Pilar", "Liliana", "Juancho", "Juanse", "María", "July", "Andrew", "Daniela"];
+const n=SORTEO.participantes||n0;
 const te=new TextEncoder(),N=s=>s.normalize('NFC'),ub=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 async function abrir(p){const h=[...new Uint8Array(await crypto.subtle.digest('SHA-256',te.encode(SORTEO.salt+'|'+N(p))))].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,24),bl=SORTEO.blobs[h];if(!bl)throw Error('sin blob');
  const k=await crypto.subtle.deriveKey({name:'PBKDF2',salt:te.encode(SORTEO.salt),iterations:SORTEO.iter,hash:'SHA-256'},await crypto.subtle.importKey('raw',te.encode(N(p)),'PBKDF2',false,['deriveKey']),{name:'AES-GCM',length:256},false,['decrypt']);
@@ -16,7 +17,9 @@ const dev=localStorage.getItem('dev')||(()=>{const d=crypto.randomUUID();localSt
 const cv=document.getElementById('c'),x=cv.getContext('2d'),a=2*Math.PI/n.length,col=['#8fa98a','#c8694a','#f1e6d0','#5d7a5a'];
 n.forEach((p,i)=>{x.beginPath();x.moveTo(300,300);x.arc(300,300,290,i*a,(i+1)*a);x.fillStyle=col[i%4];x.fill();x.save();x.translate(300,300);x.rotate(i*a+a/2);x.fillStyle=i%4==2?'#3a3a34':'#fff';x.font='600 21px Inter, system-ui';x.textAlign='right';x.fillText(p,270,8);x.restore()});
 x.beginPath();x.arc(300,300,40,0,7);x.fillStyle='#fffaf1';x.fill();
-if(SORTEO.activa){const st=document.getElementById('st'),g=document.getElementById('go'),L=document.getElementById('lista');
+const abre=SORTEO.desde?Date.parse(SORTEO.desde):0;
+if(SORTEO.activa&&Date.now()<abre)document.getElementById('st').textContent='La ruleta abre el '+new Date(abre).toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long'})+' 🎄';
+if(SORTEO.activa&&Date.now()>=abre){const st=document.getElementById('st'),g=document.getElementById('go'),L=document.getElementById('lista');
  const sel=document.createElement('select');sel.className='btn sec full';sel.innerHTML='<option value="">¿Quién eres?</option>'+n.map(p=>'<option>'+p+'</option>').join('');g.before(sel);
  st.textContent='¡Llegó el momento!';let rot=0,busy=false;
  const girar=t=>{const i=n.indexOf(t);rot+=360*6+((270-(i*360/n.length+180/n.length)-rot)%360+360)%360;cv.style.transition='transform 4s cubic-bezier(.2,.8,.2,1)';cv.style.transform='rotate('+rot+'deg)'};
