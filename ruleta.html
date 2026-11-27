@@ -7,7 +7,7 @@
 <script>
 // FASE 2: el sorteo se generó offline (tools/sorteo.mjs). Aquí solo hay un blob cifrado por persona;
 // cada uno se abre únicamente con el nombre de su dueño. Un candado en la nube permite un solo giro por nombre.
-const n0=["Hilda", "Elio", "Jenny", "Claudia", "Leonor", "Nancy", "William", "Juanda", "Diana", "Santi", "Moni", "Willi", "Naty", "Juan Pa", "Leonardo", "Pilar", "Liliana", "Juancho", "Juanse", "María", "July", "Andrew", "Daniela"];
+const n0=["Hilda", "Elio", "Jenny", "Claudia", "Leonor", "Nancy", "William", "Juanda", "Santi", "Moni", "Willi", "Naty", "Juan Pa", "Leonardo", "Pilar", "Liliana", "Juancho", "Juanse", "María", "July", "Andrew", "Daniela"];
 const n=SORTEO.participantes||n0;
 const te=new TextEncoder(),N=s=>s.normalize('NFC'),ub=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 async function abrir(p){const h=[...new Uint8Array(await crypto.subtle.digest('SHA-256',te.encode(SORTEO.salt+'|'+N(p))))].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,24),bl=SORTEO.blobs[h];if(!bl)throw Error('sin blob');
